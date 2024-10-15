@@ -33,6 +33,7 @@ class PasteForm(FlaskForm):
         self.language.choices = sorted(
             [(lexer[1][0], lexer[0]) for lexer in get_all_lexers() if lexer[1]]
         )
+        self.language.data = "text"
 
 
 class Paste(db.Model):
@@ -81,11 +82,21 @@ async def paste(id):
         formatter = HtmlFormatter(lineos=True, cssclass="source")
         highlight_body = highlight(paste.body, lexer, formatter)
         highlight_css = formatter.get_style_defs(".source")
+        
+        form = PasteForm()
+        if form.validate_on_submit():
+            paste = Paste(body=form.body.data, language=form.language.data)
+            session.add(paste)
+            await session.commit()
+            return redirect(url_for("paste", id=paste.id))
+        form.body.data=paste.body
+        
         return render_template(
             "paste.html",
             paste=paste,
             highlight_body=highlight_body,
             highlight_css=highlight_css,
+            form=form
         )
 
 
