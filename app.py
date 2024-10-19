@@ -33,8 +33,6 @@ class PasteForm(FlaskForm):
         self.language.choices = sorted(
             [(lexer[1][0], lexer[0]) for lexer in get_all_lexers() if lexer[1]]
         )
-        self.language.data = "text"
-
 
 class Paste(db.Model):
     id: Mapped[str] = mapped_column(
@@ -69,6 +67,7 @@ async def index():
             return redirect(url_for("paste", id=paste.id))
         query = db.select(Paste).order_by(Paste.timestamp.desc()).limit(10)
         pastes = [paste async for paste in await session.stream_scalars(query)]
+        form.language.data = "text"
         return render_template("index.html", form=form, pastes=pastes)
 
 
@@ -90,7 +89,7 @@ async def paste(id):
             await session.commit()
             return redirect(url_for("paste", id=paste.id))
         form.body.data=paste.body
-        
+        form.language.data = paste.language
         return render_template(
             "paste.html",
             paste=paste,
